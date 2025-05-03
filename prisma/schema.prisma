@@ -1,0 +1,58 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             Int      @id @default(autoincrement())
+  email          String   @unique
+  firstName      String   @map("first_name")
+  middleName     String   @map("middle_name")
+  lastName       String   @map("last_name")
+  hashedPassword String   @map("hashed_password") @db.VarChar(300)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  savedLocation SavedLocation[]
+
+  @@index([id, email])
+  @@fulltext([firstName, middleName, lastName])
+  @@map("users")
+}
+
+model Location {
+  id      Int    @id @default(autoincrement())
+  name    String
+  region  String
+  country String
+  lat     Int
+  lon     Int
+
+  savedLocations SavedLocation[]
+
+  @@unique([name, country])
+  @@map("locations")
+}
+
+model SavedLocation {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @map("user_id")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  locationId Int      @map("location_id")
+  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, locationId])
+  @@index([userId, createdAt])
+  @@map("saved_locations")
+}
