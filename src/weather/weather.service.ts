@@ -1,5 +1,8 @@
+import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Prisma } from '@prisma/client';
+import { Queue } from 'bullmq';
 import { ForecastDto } from './dto/forecast.dto';
 import { SearchDto } from './dto/search.dto';
 import { ForecastResponse } from './interfaces/forecast.interface';
@@ -15,6 +18,7 @@ export class WeatherService {
   constructor(
     private readonly weatherApiService: WeatherApiService,
     private readonly configService: ConfigService,
+    @InjectQueue('location-queue') private locationQueue: Queue,
   ) {
     this.apiKey = this.configService.getOrThrow('WEATHER_API_KEY');
     this.apiUrl = this.configService.getOrThrow('WEATHER_API_URL');
@@ -61,6 +65,13 @@ export class WeatherService {
         uv: data.current.uv,
       },
     };
+    void this.addToQueue({
+      name: data.location.name,
+      region: data.location.region,
+      country: data.location.country,
+      lat: data.location.lat,
+      lon: data.location.lon,
+    });
     return response;
   }
 
@@ -70,6 +81,15 @@ export class WeatherService {
       queryParams: {
         q: location,
       },
+    });
+    data.forEach(({ name, region, country, lat, lon }) => {
+      void this.addToQueue({
+        name,
+        region,
+        country,
+        lat,
+        lon,
+      });
     });
     return data;
   }
@@ -99,5 +119,23 @@ export class WeatherService {
       step += 3;
     }
     return result;
+  }
+
+  private addToQueue(data: Prisma.LocationCreateInput) {
+    void this.locationQueue.add(
+      'create-location',
+      {
+        ...data,
+      },
+      {
+        attempts: 100,
+        removeOnFail: false,
+        removeOnComplete: true,
+        backoff: {
+          type: 'exponential',
+          delay: 2000,
+        },
+      },
+    );
   }
 }
