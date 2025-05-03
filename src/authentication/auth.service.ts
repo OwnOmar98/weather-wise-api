@@ -38,7 +38,7 @@ export class AuthService {
     }
   }
 
-  login(user: User) {
+  login(user: Omit<User, 'hashedPassword'>) {
     const token = this.jwt.sign({ sub: user.id, email: user.email });
 
     return { access_token: token };
@@ -58,6 +58,21 @@ export class AuthService {
         errorCode: AuthenticationErrorCodesEnum.InvalidCredentials,
         explanation: 'Wrong Credentials Provided',
       });
+    return user;
+  }
+  async getUserById(id: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      omit: {
+        hashedPassword: true,
+      },
+    });
+    if (!user) {
+      throw new BadRequestException({
+        errorCode: AuthenticationErrorCodesEnum.InvalidCredentials,
+        explanation: 'Wrong Credentials Provided',
+      });
+    }
     return user;
   }
 }

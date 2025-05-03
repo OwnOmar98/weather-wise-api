@@ -1,7 +1,7 @@
 import {
-  BadRequestException,
   ExecutionContext,
   Injectable,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
@@ -26,7 +26,7 @@ export default class JwtAuthenticationGuard extends AuthGuard('jwt') {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): any {
     if (!user) {
-      throw new BadRequestException({
+      throw new UnauthorizedException({
         errorCode: AuthenticationErrorCodesEnum.InvalidAccessToken,
         explanation: 'Invalid JWT token',
       });
