@@ -6,6 +6,7 @@ import { AuthModule } from './authentication/auth.module';
 import { LocationModule } from './location/location.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { WeatherModule } from './weather/weather.module';
+import { UserSavedModule } from './user-saved/user-saved.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { WeatherModule } from './weather/weather.module';
         },
       }),
     }),
+    UserSavedModule,
   ],
   providers: [
     {
